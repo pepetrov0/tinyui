@@ -1,17 +1,34 @@
-# tinyui — pi extension
+# ✻ tinyui
 
-Two small touches on pi's TUI, drawn entirely in the user's theme:
+[![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
+[![pi package](https://img.shields.io/badge/pi-package-8250df?style=flat-square)](https://pi.dev/docs)
+[![Version](https://img.shields.io/badge/version-v1-success?style=flat-square)](https://github.com/pepetrov0/tinyui/releases)
 
-- **Thinking** — hidden entirely (streaming and settled). While the agent works,
-  one motionless row above the editor replaces pi's loader:
-  `✻ Musing… (esc to interrupt)`.
-- **Tool usage** — compact rendering: `⏺ Bash(cmd)` call lines with `⎿` one-line
-  results and `+N -M` diff stats; `ctrl+o` expands to pi's full built-in views
-  (live edit diff preview, complete output).
+> Two small touches on [pi](https://github.com/earendil-works/pi)'s TUI, drawn entirely in your theme.
 
-No theme files, no accents, no colors of its own — every token (`accent`,
-`text`, `dim`, `toolDiffAdded`…) resolves live from whatever theme the user
-selected in pi (`/theme`).
+[Features](#features) • [Install](#install) • [Use](#use) • [Update](#update) • [Development](#development)
+
+**tinyui** is a [pi package](https://pi.dev/docs) that quiets down the terminal UI while the agent works — no theme files, no accents, no colors of its own. Every token (`accent`, `text`, `dim`, `toolDiffAdded`, …) is resolved live from whatever theme you selected in pi (`/theme`).
+
+## Features
+
+- **Hidden thinking** — the reasoning stream is dropped entirely (streaming and settled; full text remains in the session file and exports). While the agent works, a single motionless row above the editor replaces pi's loader:
+  `✻ Musing… (esc to interrupt)` — with a rotating gerund, *Simmering*, *Percolating*, *Reticulating*…
+- **Compact tool lines** — `⏺ Bash(npm test)` call lines with one-line `⎿` results, `+N -M` diff stats for edits, and `(N lines)` markers instead of walls of output.
+- **Full fidelity on demand** — `ctrl+o` expands any tool call to pi's built-in views: live edit diff preview and complete output.
+- **One switch** — `/tinyui off` puts everything back exactly as pi shipped it, nothing left behind.
+- **Zero dependencies** — a single ~300 line TypeScript extension; it touches no settings and no UI at load time.
+
+A session under tinyui looks roughly like this:
+
+```text
+✻ Percolating… (esc to interrupt)
+⏺ Bash(npm test)
+⎿  12 tests passed (3 lines)
+⏺ Update(src/index.ts)
+⎿  +12 -3
+Done — tests pass.
+```
 
 ## Install
 
@@ -19,23 +36,27 @@ selected in pi (`/theme`).
 pi install git:github.com/pepetrov0/tinyui
 ```
 
-Pin a tag/branch/commit with `@`:
+Pin a tag, branch, or commit with `@`:
 
 ```sh
-pi install git:github.com/pepetrov0/tinyui@v1.0.0
+pi install git:github.com/pepetrov0/tinyui@v1
 ```
 
-> If the repo is private, install over SSH instead:
-> `pi install git:git@github.com:pepetrov0/tinyui` (both normalize to the same
-> package identity, so switching the setting string later is a no-op).
+> [!NOTE]
+> If the repo is private, install over SSH instead: `pi install git:git@github.com:pepetrov0/tinyui`. Both forms resolve to the same package identity, so switching later is a no-op.
 
 ## Use
 
+tinyui has exactly one command, and it defaults to *status*:
+
 | Command | Effect |
 |---|---|
-| `/tinyui` | status |
-| `/tinyui off` | thinking visible again, pi's built-in tool rendering |
-| `/tinyui on` | back to hidden thinking + compact tool lines |
+| `/tinyui` | Show whether tinyui is on or off |
+| `/tinyui off` | Thinking visible again, pi's built-in tool rendering |
+| `/tinyui on` | Back to hidden thinking and compact tool lines |
+
+> [!TIP]
+> Even with tinyui on, you never lose information: `ctrl+o` (or clicking) expands any tool result to pi's full built-in view — live edit diff previews and complete output included.
 
 ## Update
 
@@ -46,18 +67,18 @@ pi update git:github.com/pepetrov0/tinyui   # fetch + move upstream
 
 ## Development
 
-This repo is the canonical copy — once installed as a package, pi manages its
-own clone under `~/.pi/agent/git/github.com/pepetrov0/tinyui/` (untracked
-changes there are wiped on update). **Do not keep a second copy of the
-extension in `~/.pi/agent/extensions/`** — resources from packages lose to
-file extensions anyway (precedence: local files 0–3, package 4) and a
-duplicate registration is just noise.
+This repo is the canonical copy. Once installed as a package, pi manages its own clone under `~/.pi/agent/git/github.com/pepetrov0/tinyui/` — untracked changes there are wiped on update.
 
-Smoke test (loads the extension through pi's real jiti pipeline with stubbed
-lifecycle contexts and renders with pi's built-in dark theme):
+> [!IMPORTANT]
+> Do not keep a second copy of the extension in `~/.pi/agent/extensions/`. File extensions outrank package resources anyway (precedence: local files 0–3, package 4), so a duplicate is pure noise, not a fallback.
+
+The smoke test loads the extension through pi's real jiti pipeline, stubs the lifecycle contexts, and renders against pi's built-in dark theme — asserting the registrations, the one-row status pane, theme pass-through (`⏺` must carry the *user's* accent), thinking hiding, `+N -M` diff stats, and `/tinyui` toggling:
 
 ```sh
 npm test
 ```
 
-Loop: edit → `npm test` → commit → push → `pi update …` → `/reload`.
+> [!NOTE]
+> The test imports from a local pi installation. Set `PI_ROOT` if yours lives elsewhere (default: `/usr/lib/node_modules/pi`).
+
+The feedback loop is: edit → `npm test` → commit → push → `pi update git:github.com/pepetrov0/tinyui` → `/reload`.
