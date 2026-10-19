@@ -120,6 +120,32 @@ if (!call.render(80)[0].includes("⏺") || !call.render(80)[0].includes("npm tes
 const accentExpected = userTheme.fg("accent", "⏺");
 if (!call.render(80)[0].includes(accentExpected)) throw new Error("⏺ must be colored with the user's theme accent");
 
+console.log("\n== expanded result → ⎿/│ gutter (user's theme) ==");
+const expanded = renderers.renderResult(
+    { content: [{ type: "text", text: "one\ntwo" }], details: {} },
+    { expanded: true, isPartial: false },
+    userTheme,
+    { isError: false, args: {} },
+);
+const expRows = expanded.render(80);
+console.log("expanded rows:", JSON.stringify(expRows));
+if (expRows.length !== 2) throw new Error("expanded must keep one row per result line");
+if (!expRows[0].includes("⎿") || !expRows[1].includes("│")) throw new Error("expanded gutter must be ⎿ corner then │ bar");
+if (!expRows[1].includes(userTheme.fg("toolOutput", "two"))) throw new Error("expanded lines must carry the user's theme toolOutput");
+
+const expandedEdit = editRenderers.renderResult(
+    { content: [], details: { diff: "+added line\n-removed line\n context" } },
+    { expanded: true, isPartial: false },
+    userTheme,
+    { isError: false, args: {} },
+);
+const expEditRows = expandedEdit.render(80);
+console.log("expanded edit rows:", JSON.stringify(expEditRows));
+if (expEditRows.length !== 3) throw new Error("expanded edit must render the full diff");
+if (!expEditRows[0].includes(userTheme.fg("toolDiffAdded", "+added line"))) throw new Error("expanded adds must use toolDiffAdded");
+if (!expEditRows[1].includes(userTheme.fg("toolDiffRemoved", "-removed line"))) throw new Error("expanded removals must use toolDiffRemoved");
+if (!expEditRows[1].includes("│") || !expEditRows[2].includes("│")) throw new Error("expanded diff rows must continue the │ gutter");
+
 console.log("\n== /tinyui off ==");
 uiCalls.length = 0;
 await commands["tinyui"].handler("off", ctx);

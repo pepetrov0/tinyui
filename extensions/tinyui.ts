@@ -5,14 +5,15 @@
  *                a single motionless row above the editor replaces pi's loader:
  *                `✻ Musing… (esc to interrupt)`.
  *   Tool usage   compact rendering: `⏺ Bash(cmd)` calls with `⎿` one-line results
- *                and `+N -M` diff stats; ctrl+o expands to pi's full built-in views.
+ *                and `+N -M` diff stats; expanding a result (ctrl+o/click) drops its
+ *                complete output into a `⎿`→`│` left gutter, still in the user's theme.
  *
  * No theme files, no accents, no colors of its own — every token (accent, text,
  * dim, toolDiff…) is resolved from whatever theme the user selected in pi.
  *
  * /tinyui  — on · off · status
  */
-import { Text, truncateToWidth } from "@earendil-works/pi-tui";
+import { truncateToWidth } from "@earendil-works/pi-tui";
 import type {
     AgentToolResult,
     ExtensionAPI,
@@ -62,6 +63,21 @@ class Line {
 }
 
 /**
+ * A block of static rows (an expanded result): like Line but renders every row,
+ * width-truncated, colors rebuilt on every render.
+ */
+class Rows {
+    constructor(private readonly rows: () => string[]) {}
+    invalidate() {
+        /* no state; colors rebuild every render */
+    }
+    render(width: number): string[] {
+        const inner = Math.max(8, width);
+        return this.rows().map((row) => truncate(row, inner));
+    }
+}
+
+/**
  * One spinner row pinned above the editor while streaming: `✻ Mesmerizing… (esc to interrupt)`.
  * Never moves, never grows.
  */
@@ -86,6 +102,14 @@ class ThinkingPane {
 }
 
 // ── Tool rendering ──────────────────────────────────────────────────────────
+/**
+ * Left gutter for expanded results: `⎿` corner on the first row, then `│`
+ * continuing down the side — the bar column lines up under the stem of `⎿`.
+ */
+function gutter(t: Theme, rows: string[]): string[] {
+    return rows.map((row, i) => `   ${t.fg("muted", i === 0 ? "⎿  " : "│  ")}${row}`);
+}
+
 const TOOL_STYLES: Record<string, { verb: string; arg?: string }> = {
     bash: { verb: "Bash", arg: "command" },
     powershell: { verb: "PowerShell", arg: "command" },
@@ -199,17 +223,13 @@ export default function tinyUiExtension(pi: ExtensionAPI) {
 
     // ── Tool renderer: ⏺ call / ⎿ result ────────────────────────────────────
     // Collapsed: terse one-liners in the user's theme. Expanded (ctrl+o / click):
-    // delegates to pi built-ins for full fidelity — live edit diff preview and
-    // complete results. /tinyui off passes everything straight through.
+    // same call line, complete results under a `⎿`→`│` left gutter. /tinyui off
+    // passes everything straight through.
     pi.registerToolRenderer((toolName, next) => {
         if (!enabled) return typeof next === "function" ? next() : undefined;
         return {
             renderShell: "self",
             renderCall: (args: any, theme: Theme, context: ToolRenderContext<any, any>) => {
-                if (context.expanded) {
-                    const builtin = typeof next === "function" ? next()?.renderCall : undefined;
-                    if (builtin) return builtin(args, theme, context);
-                }
                 const t = theme;
                 const { verb, arg } = styleFor(toolName);
                 const snippet = snippetFor(args, arg, context.argsComplete);
@@ -229,8 +249,31 @@ export default function tinyUiExtension(pi: ExtensionAPI) {
                 const text = resultText(result);
                 const pad = 3;
                 if (options.expanded) {
-                    const builtin = typeof next === "function" ? next()?.renderResult : undefined;
-                    if (builtin) return builtin({ content: result.content, details: result.details }, options, theme, context);
+                    if (context.isError) {
+                        const lines = (text.trim().length > 0 ? text.trim() : "failed").split("\n");
+                        return new Rows(() => gutter(t, lines.map((l) => t.fg("error", l)))) as any;
+                    }
+                    const ed: any = result.details;
+                    if (toolName === "edit" && typeof ed?.diff === "string" && ed.diff.length > 0) {
+                        const rows = ed.diff.split("\n").map((l: string) => {
+                            if (l.startsWith("@@") || l.startsWith("+++") || l.startsWith("---")) return t.fg("dim", l);
+                            if (l.startsWith("+")) return t.fg("toolDiffAdded", l);
+                            if (l.startsWith("-")) return t.fg("toolDiffRemoved", l);
+                            return t.fg("muted", l);
+                        });
+                        return new Rows(() => gutter(t, rows)) as any;
+                    }
+                    if (!text) {
+                        return new Line(
+                            () => `${t.fg("muted", "⎿")}  ${t.fg("dim", options.isPartial ? "running…" : "(no output)")}`,
+                            pad,
+                        ) as any;
+                    }
+                    return new Rows(() => {
+                        const rows = text.split("\n").map((l) => (l.length > 0 ? t.fg("toolOutput", l) : ""));
+                        if (options.isPartial) rows.push(t.fg("dim", "…"));
+                        return gutter(t, rows);
+                    }) as any;
                 }
                 if (context.isError) {
                     const first = (text.split("\n")[0] ?? "").trim() || "failed";
@@ -257,9 +300,6 @@ export default function tinyUiExtension(pi: ExtensionAPI) {
                     return new Line(build, pad) as any;
                 }
                 const lines = text.split("\n");
-                if (options.expanded) {
-                    return new Text(lines.map((l) => `   ${t.fg("toolOutput", l)}`).join("\n"), 0, 0) as any;
-                }
                 const first = (lines.find((l) => l.trim().length > 0) ?? "").trim();
                 const extra = lines.length > 1 ? ` ${t.fg("dim", `(${lines.length} lines)`)}` : "";
                 const running = options.isPartial ? ` ${t.fg("dim", "…")}` : "";

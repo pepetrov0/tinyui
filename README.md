@@ -15,7 +15,7 @@
 - **Hidden thinking** — the reasoning stream is dropped entirely (streaming and settled; full text remains in the session file and exports). While the agent works, a single motionless row above the editor replaces pi's loader:
   `✻ Musing… (esc to interrupt)` — with a rotating gerund, *Simmering*, *Percolating*, *Reticulating*…
 - **Compact tool lines** — `⏺ Bash(npm test)` call lines with one-line `⎿` results, `+N -M` diff stats for edits, and `(N lines)` markers instead of walls of output.
-- **Full fidelity on demand** — `ctrl+o` expands any tool call to pi's built-in views: live edit diff preview and complete output.
+- **Full fidelity on demand** — `ctrl+o` (or a click) expands any tool result in place: the `⎿` corner turns into a `│` left gutter holding the complete output — full edit diffs colored `+`/`-` included.
 - **One switch** — `/tinyui off` puts everything back exactly as pi shipped it, nothing left behind.
 - **Zero dependencies** — a single ~300 line TypeScript extension; it touches no settings and no UI at load time.
 
@@ -56,7 +56,7 @@ tinyui has exactly one command, and it defaults to *status*:
 | `/tinyui on` | Back to hidden thinking and compact tool lines |
 
 > [!TIP]
-> Even with tinyui on, you never lose information: `ctrl+o` (or clicking) expands any tool result to pi's full built-in view — live edit diff previews and complete output included.
+> Even with tinyui on, you never lose information: `ctrl+o` (or clicking) expands any tool result in place — complete output and full edit diffs under a `⎿` → `│` gutter, still in your theme.
 
 ## Update
 
@@ -72,7 +72,7 @@ This repo is the canonical copy. Once installed as a package, pi manages its own
 > [!IMPORTANT]
 > Do not keep a second copy of the extension in `~/.pi/agent/extensions/`. File extensions outrank package resources anyway (precedence: local files 0–3, package 4), so a duplicate is pure noise, not a fallback.
 
-The smoke test loads the extension through pi's real jiti pipeline, stubs the lifecycle contexts, and renders against pi's built-in dark theme — asserting the registrations, the one-row status pane, theme pass-through (`⏺` must carry the *user's* accent), thinking hiding, `+N -M` diff stats, and `/tinyui` toggling:
+The smoke test loads the extension through pi's real jiti pipeline, stubs the lifecycle contexts, and renders against pi's built-in dark theme — asserting the registrations, the one-row status pane, theme pass-through (`⏺` must carry the *user's* accent), thinking hiding, `+N -M` diff stats, the `⎿`→`│` expansion gutter, and `/tinyui` toggling:
 
 ```sh
 npm test
