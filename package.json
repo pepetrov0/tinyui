@@ -1,0 +1,28 @@
+{
+  "name": "tinyui",
+  "version": "1.0.0",
+  "description": "Two small touches on pi's TUI: hidden thinking with a motionless spinner row, and compact ⏺/⎿ tool rendering — drawn entirely in the user's theme.",
+  "keywords": [
+    "pi-package",
+    "pi",
+    "tui",
+    "extension",
+    "thinking",
+    "tool-rendering"
+  ],
+  "license": "MIT",
+  "author": "Petar Petrov <ppetrov@pbyte.xyz>",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:pepetrov0/tinyui.git"
+  },
+  "type": "module",
+  "scripts": {
+    "test": "node test/smoke.mjs"
+  },
+  "pi": {
+    "extensions": [
+      "./extensions/tinyui.ts"
+    ]
+  }
+}
