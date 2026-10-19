@@ -4,9 +4,9 @@
  *   Thinking     hidden entirely (streaming and settled). While the agent works,
  *                a single motionless row above the editor replaces pi's loader:
  *                `✻ Musing… (esc to interrupt)`.
- *   Tool usage   compact rendering: `⏺ Bash(cmd)` calls with `⎿` one-line results
+ *   Tool usage   compact rendering: `⏺ Bash(cmd)` calls with `|` one-line results
  *                and `+N -M` diff stats; expanding a result (ctrl+o/click) drops its
- *                complete output into a `⎿`→`│` left gutter, still in the user's theme.
+ *                complete output into a `|`…`-` left gutter, still in the user's theme.
  *
  * No theme files, no accents, no colors of its own — every token (accent, text,
  * dim, toolDiff…) is resolved from whatever theme the user selected in pi.
@@ -103,11 +103,15 @@ class ThinkingPane {
 
 // ── Tool rendering ──────────────────────────────────────────────────────────
 /**
- * Left gutter for expanded results: `⎿` corner on the first row, then `│`
- * continuing down the side — the bar column lines up under the stem of `⎿`.
+ * Left gutter for expanded results: `|` bars down the side of every row, a lone
+ * `-` closing the block underneath when it spans more than one row. Every mark
+ * shares one column, so the edge reads as an unbroken run of bars terminated
+ * by a dash.
  */
 function gutter(t: Theme, rows: string[]): string[] {
-    return rows.map((row, i) => `   ${t.fg("muted", i === 0 ? "⎿  " : "│  ")}${row}`);
+    const bars = rows.map((row) => `   ${t.fg("muted", "|  ")}${row}`);
+    if (rows.length > 1) bars.push(`   ${t.fg("muted", "-")}`);
+    return bars;
 }
 
 const TOOL_STYLES: Record<string, { verb: string; arg?: string }> = {
@@ -221,9 +225,9 @@ export default function tinyUiExtension(pi: ExtensionAPI) {
         stopThinkingPane(ctx as ExtensionContext | undefined);
     });
 
-    // ── Tool renderer: ⏺ call / ⎿ result ────────────────────────────────────
+    // ── Tool renderer: ⏺ call / | result ────────────────────────────────────
     // Collapsed: terse one-liners in the user's theme. Expanded (ctrl+o / click):
-    // same call line, complete results under a `⎿`→`│` left gutter. /tinyui off
+    // same call line, complete results under a `|`→`-` left gutter. /tinyui off
     // passes everything straight through.
     pi.registerToolRenderer((toolName, next) => {
         if (!enabled) return typeof next === "function" ? next() : undefined;
@@ -265,7 +269,7 @@ export default function tinyUiExtension(pi: ExtensionAPI) {
                     }
                     if (!text) {
                         return new Line(
-                            () => `${t.fg("muted", "⎿")}  ${t.fg("dim", options.isPartial ? "running…" : "(no output)")}`,
+                            () => `${t.fg("muted", "|")}  ${t.fg("dim", options.isPartial ? "running…" : "(no output)")}`,
                             pad,
                         ) as any;
                     }
@@ -277,7 +281,7 @@ export default function tinyUiExtension(pi: ExtensionAPI) {
                 }
                 if (context.isError) {
                     const first = (text.split("\n")[0] ?? "").trim() || "failed";
-                    const build = () => `${t.fg("muted", "⎿")}  ${t.fg("error", `Error: ${first}`)}`;
+                    const build = () => `${t.fg("muted", "|")}  ${t.fg("error", `Error: ${first}`)}`;
                     return new Line(build, pad) as any;
                 }
                 // Edit: terse "+N -M" diff stat.
@@ -291,19 +295,19 @@ export default function tinyUiExtension(pi: ExtensionAPI) {
                     }
                     const running = options.isPartial ? ` ${t.fg("dim", "…")}` : "";
                     const build = () =>
-                        `${t.fg("muted", "⎿")}  ${t.fg("toolDiffAdded", `+${added}`)} ${t.fg("toolDiffRemoved", `-${removed}`)}${running}`;
+                        `${t.fg("muted", "|")}  ${t.fg("toolDiffAdded", `+${added}`)} ${t.fg("toolDiffRemoved", `-${removed}`)}${running}`;
                     return new Line(build, pad) as any;
                 }
                 if (!text) {
                     const build = () =>
-                        `${t.fg("muted", "⎿")}  ${t.fg("dim", options.isPartial ? "running…" : "(no output)")}`;
+                        `${t.fg("muted", "|")}  ${t.fg("dim", options.isPartial ? "running…" : "(no output)")}`;
                     return new Line(build, pad) as any;
                 }
                 const lines = text.split("\n");
                 const first = (lines.find((l) => l.trim().length > 0) ?? "").trim();
                 const extra = lines.length > 1 ? ` ${t.fg("dim", `(${lines.length} lines)`)}` : "";
                 const running = options.isPartial ? ` ${t.fg("dim", "…")}` : "";
-                return new Line(() => `${t.fg("muted", "⎿")}  ${t.fg("muted", first)}${extra}${running}`, pad) as any;
+                return new Line(() => `${t.fg("muted", "|")}  ${t.fg("muted", first)}${extra}${running}`, pad) as any;
             },
         };
     });
