@@ -1,7 +1,7 @@
 {
   "name": "tinyui",
   "version": "1.0.0",
-  "description": "Two small touches on pi's TUI: hidden thinking with a motionless spinner row, and compact ⏺/| tool rendering — drawn entirely in the user's theme.",
+  "description": "Two small touches on pi's TUI: hidden thinking with a motionless spinner row, and compact ⏺/│ tool rendering with shell exit codes — drawn entirely in the user's theme.",
   "keywords": [
     "pi-package",
     "pi",

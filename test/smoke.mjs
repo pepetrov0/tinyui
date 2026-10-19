@@ -95,12 +95,14 @@ const renderers = resolver("bash", () => undefined);
 const call = renderers.renderCall({ command: "npm test" }, userTheme, { expanded: false, argsComplete: true, args: { command: "npm test" } });
 console.log("call:", JSON.stringify(call.render(80)[0]));
 const res = renderers.renderResult(
-    { content: [{ type: "text", text: "passed 1 test\nsecond line" }], details: {} },
+    { content: [{ type: "text", text: "passed 1 test\nsecond line" }], details: {}, structuredContent: { exit_code: 0 } },
     { expanded: false, isPartial: false },
     userTheme,
     { isError: false, args: {} },
 );
-console.log("result:", JSON.stringify(res.render(80)[0]));
+const resRow = res.render(80)[0];
+console.log("result:", JSON.stringify(resRow));
+if (!resRow.includes("·") || !resRow.includes(userTheme.fg("dim", "exit 0"))) throw new Error("collapsed bash must show its exit code");
 const editRenderers = resolver("edit", () => undefined);
 const editRes = editRenderers.renderResult(
     { content: [], details: { diff: "+added line\n-removed line\n context" } },
@@ -120,19 +122,50 @@ if (!call.render(80)[0].includes("⏺") || !call.render(80)[0].includes("npm tes
 const accentExpected = userTheme.fg("accent", "⏺");
 if (!call.render(80)[0].includes(accentExpected)) throw new Error("⏺ must be colored with the user's theme accent");
 
-console.log("\n== expanded result → |/- gutter (user's theme) ==");
+console.log("\n== expanded result → │/╰ gutter + exit status (user's theme) ==");
 const expanded = renderers.renderResult(
-    { content: [{ type: "text", text: "one\ntwo" }], details: {} },
+    { content: [{ type: "text", text: "one\ntwo" }], details: {}, structuredContent: { exit_code: 0 } },
     { expanded: true, isPartial: false },
     userTheme,
     { isError: false, args: {} },
 );
 const expRows = expanded.render(80);
 console.log("expanded rows:", JSON.stringify(expRows));
-if (expRows.length !== 3) throw new Error("expanded must keep one row per result line, plus the closing dash");
-if (!expRows[0].includes("|") || !expRows[1].includes("|")) throw new Error("expanded gutter must be | bars");
-if (!expRows[2].includes(userTheme.fg("muted", "-"))) throw new Error("expanded block must close with a lone - row");
+if (expRows.length !== 3) throw new Error("expanded must keep one row per result line, plus the closing corner");
+if (!expRows[0].includes("│") || !expRows[1].includes("│")) throw new Error("expanded gutter must be │ bars");
+if (!expRows[2].includes(userTheme.fg("muted", "╰─")) || !expRows[2].includes(userTheme.fg("dim", "exit 0")))
+    throw new Error("expanded block must close with ╰─ and the shell exit status");
 if (!expRows[1].includes(userTheme.fg("toolOutput", "two"))) throw new Error("expanded lines must carry the user's theme toolOutput");
+
+// bash failure: exit code in error color, collapsed and expanded
+const errRes = renderers.renderResult(
+    { content: [{ type: "text", text: "boom\n\nCommand exited with code 1" }], details: {}, structuredContent: { exit_code: 1 } },
+    { expanded: false, isPartial: false },
+    userTheme,
+    { isError: true, args: {} },
+);
+const errRow = errRes.render(80)[0];
+console.log("error result:", JSON.stringify(errRow));
+if (!errRow.includes(userTheme.fg("error", "exit 1"))) throw new Error("bash failures must show their exit code in error color");
+
+// fallback: exit code parsed from pi's appended status line when structuredContent is absent
+const fbErr = renderers.renderResult(
+    { content: [{ type: "text", text: "boom\n\nCommand exited with code 137" }], details: {} },
+    { expanded: false, isPartial: false },
+    userTheme,
+    { isError: true, args: {} },
+);
+if (!fbErr.render(80)[0].includes("exit 137")) throw new Error("exit code must fall back to pi's appended status line");
+
+// other tools never get an exit tag
+const readRenderers = resolver("read", () => undefined);
+const readRes = readRenderers.renderResult(
+    { content: [{ type: "text", text: "file body" }], details: {}, structuredContent: { exit_code: 0 } },
+    { expanded: false, isPartial: false },
+    userTheme,
+    { isError: false, args: {} },
+);
+if (readRes.render(80)[0].includes("exit")) throw new Error("exit tag must be shell-tools only");
 
 const expandedEdit = editRenderers.renderResult(
     { content: [], details: { diff: "+added line\n-removed line\n context" } },
@@ -145,8 +178,8 @@ console.log("expanded edit rows:", JSON.stringify(expEditRows));
 if (expEditRows.length !== 4) throw new Error("expanded edit must render the full diff, plus the closing dash");
 if (!expEditRows[0].includes(userTheme.fg("toolDiffAdded", "+added line"))) throw new Error("expanded adds must use toolDiffAdded");
 if (!expEditRows[1].includes(userTheme.fg("toolDiffRemoved", "-removed line"))) throw new Error("expanded removals must use toolDiffRemoved");
-if (!expEditRows[1].includes("|") || !expEditRows[2].includes("|")) throw new Error("expanded diff rows must continue the | gutter");
-if (!expEditRows[3].includes(userTheme.fg("muted", "-"))) throw new Error("expanded diff must close with a lone - row");
+if (!expEditRows[1].includes("│") || !expEditRows[2].includes("│")) throw new Error("expanded diff rows must continue the │ gutter");
+if (!expEditRows[3].includes(userTheme.fg("muted", "╰─"))) throw new Error("expanded diff must close with a ╰─ corner");
 
 console.log("\n== /tinyui off ==");
 uiCalls.length = 0;
