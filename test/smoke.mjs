@@ -103,6 +103,10 @@ const res = renderers.renderResult(
 const resRow = res.render(80)[0];
 console.log("result:", JSON.stringify(resRow));
 if (!resRow.includes("·") || !resRow.includes(userTheme.fg("dim", "exit 0"))) throw new Error("collapsed bash must show its exit code");
+// indent: the result's │ must sit directly under the call's ⏺ (same 2-space column)
+const plain = (s) => s.replace(/\x1b\[[0-9;]*m/g, "");
+if (!plain(call.render(80)[0]).startsWith("  ⏺ ")) throw new Error("call bullet must be indented 2 spaces");
+if (!plain(resRow).startsWith("  │  ")) throw new Error("result │ must sit directly under the ⏺");
 const editRenderers = resolver("edit", () => undefined);
 const editRes = editRenderers.renderResult(
     { content: [], details: { diff: "+added line\n-removed line\n context" } },
@@ -122,7 +126,7 @@ if (!call.render(80)[0].includes("⏺") || !call.render(80)[0].includes("npm tes
 const accentExpected = userTheme.fg("accent", "⏺");
 if (!call.render(80)[0].includes(accentExpected)) throw new Error("⏺ must be colored with the user's theme accent");
 
-console.log("\n== expanded result → │/╰ gutter + exit status (user's theme) ==");
+console.log("\n== expanded result → │ gutter, no ╰─ corner (user's theme) ==");
 const expanded = renderers.renderResult(
     { content: [{ type: "text", text: "one\ntwo" }], details: {}, structuredContent: { exit_code: 0 } },
     { expanded: true, isPartial: false },
@@ -131,10 +135,12 @@ const expanded = renderers.renderResult(
 );
 const expRows = expanded.render(80);
 console.log("expanded rows:", JSON.stringify(expRows));
-if (expRows.length !== 3) throw new Error("expanded must keep one row per result line, plus the closing corner");
+if (expRows.length !== 3) throw new Error("expanded must keep one row per result line, plus the vertical closing bar");
 if (!expRows[0].includes("│") || !expRows[1].includes("│")) throw new Error("expanded gutter must be │ bars");
-if (!expRows[2].includes(userTheme.fg("muted", "╰─")) || !expRows[2].includes(userTheme.fg("dim", "exit 0")))
-    throw new Error("expanded block must close with ╰─ and the shell exit status");
+if (!expRows[2].includes(userTheme.fg("muted", "│  ")) || !expRows[2].includes(userTheme.fg("dim", "exit 0")))
+    throw new Error("expanded block must close on a bare │ bar carrying the shell exit status");
+if (expRows.some((r) => r.includes("╰─"))) throw new Error("no ╰─ corner may remain in the expanded gutter");
+if (!plain(expRows[0]).startsWith("  │  ")) throw new Error("expanded gutter bars must sit under the ⏺");
 if (!expRows[1].includes(userTheme.fg("toolOutput", "two"))) throw new Error("expanded lines must carry the user's theme toolOutput");
 
 // bash failure: exit code in error color, collapsed and expanded
@@ -175,11 +181,11 @@ const expandedEdit = editRenderers.renderResult(
 );
 const expEditRows = expandedEdit.render(80);
 console.log("expanded edit rows:", JSON.stringify(expEditRows));
-if (expEditRows.length !== 4) throw new Error("expanded edit must render the full diff, plus the closing dash");
+if (expEditRows.length !== 4) throw new Error("expanded edit must render the full diff, plus the vertical closing bar");
 if (!expEditRows[0].includes(userTheme.fg("toolDiffAdded", "+added line"))) throw new Error("expanded adds must use toolDiffAdded");
 if (!expEditRows[1].includes(userTheme.fg("toolDiffRemoved", "-removed line"))) throw new Error("expanded removals must use toolDiffRemoved");
 if (!expEditRows[1].includes("│") || !expEditRows[2].includes("│")) throw new Error("expanded diff rows must continue the │ gutter");
-if (!expEditRows[3].includes(userTheme.fg("muted", "╰─"))) throw new Error("expanded diff must close with a ╰─ corner");
+if (!expEditRows[3].includes(userTheme.fg("muted", "│"))) throw new Error("expanded diff must close on a bare │ bar");
 
 console.log("\n== /tinyui off ==");
 uiCalls.length = 0;

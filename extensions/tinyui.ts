@@ -6,8 +6,8 @@
  *                `✻ Musing… (esc to interrupt)`.
  *   Tool usage   compact rendering: `⏺ Bash(cmd)` calls with `│` one-line results
  *                (`· exit N` for shell tools) and `+N -M` diff stats; expanding a
- *                result (ctrl+o/click) drops its complete output into a `│`…`╰─`
- *                left gutter, still in the user's theme.
+ *                result (ctrl+o/click) drops its complete output under a `│` left
+ *                gutter, still in the user's theme.
  *
  * No theme files, no accents, no colors of its own — every token (accent, text,
  * dim, toolDiff…) is resolved from whatever theme the user selected in pi.
@@ -27,6 +27,8 @@ import type {
 // ── Spinner ─────────────────────────────────────────────────────────────────
 const SPINNER_FRAMES = ["✻", "✶", "✽", "✳", "✢", "●"];
 const SPINNER_MS = 110;
+// Ticks between verb rotations (~10 s at SPINNER_MS) — a full breath, not a flutter.
+const GERUND_ROTATE_TICKS = 90;
 const GERUNDS = [
     "Mesmerizing", "Musing", "Pondering", "Simmering", "Brewing", "Conjuring", "Noodling",
     "Vibing", "Marinating", "Percolating", "Reticulating", "Crunching",
@@ -104,14 +106,18 @@ class ThinkingPane {
 
 // ── Tool rendering ──────────────────────────────────────────────────────────
 /**
- * Left gutter for expanded results: `│` bars down the side of every row, a
- * rounded `╰─` closing the column underneath. Shell tools always get the close
- * — its `close` argument carries the colored `exit N` status — while other
- * tools close only when the block spans more than one row.
+ * Left gutter for expanded results: `│` bars down the side of every row, indented
+ * to sit directly under the call's `⏺`, with the column closing on a bare vertical
+ * bar (no `╰─` corner — the gutter stays vertical all the way down). Shell tools
+ * always get the closing row — its `close` argument carries the colored `exit N`
+ * status, aligned with the output column — while other tools close only when the
+ * block spans more than one row.
  */
 function gutter(t: Theme, rows: string[], close = ""): string[] {
-    const bars = rows.map((row) => `   ${t.fg("muted", "│  ")}${row}`);
-    if (rows.length > 1 || close) bars.push(`   ${t.fg("muted", "╰─")}${close}`);
+    const bars = rows.map((row) => `  ${t.fg("muted", "│  ")}${row}`);
+    if (rows.length > 1 || close) {
+        bars.push(close ? `  ${t.fg("muted", "│  ")}${close}` : `  ${t.fg("muted", "│")}`);
+    }
     return bars;
 }
 
@@ -210,7 +216,7 @@ export default function tinyUiExtension(pi: ExtensionAPI) {
         liveTimer = setInterval(() => {
             if (!livePane) return;
             livePane.tick += 1;
-            if (livePane.tick % 24 === 0) gerundIndex += 1; // rotate the gerund every ~2.6s
+            if (livePane.tick % GERUND_ROTATE_TICKS === 0) gerundIndex += 1; // rotate the gerund every ~10 s
             livePane.requestRender();
         }, SPINNER_MS) as any;
         // The pane carries the spinner + gerund, so the built-in loader row stays down.
@@ -247,8 +253,7 @@ export default function tinyUiExtension(pi: ExtensionAPI) {
 
     // ── Tool renderer: ⏺ call / │ result ────────────────────────────────────
     // Collapsed: terse one-liners in the user's theme (shell tools suffix `· exit N`).
-    // Expanded (ctrl+o / click): same call line, complete results under a `│`…`╰─` left
-    // gutter. /tinyui off
+    // Expanded (ctrl+o / click): same call line, complete results under a `│` left gutter. /tinyui off
     // passes everything straight through.
     pi.registerToolRenderer((toolName, next) => {
         if (!enabled) return typeof next === "function" ? next() : undefined;
@@ -272,10 +277,10 @@ export default function tinyUiExtension(pi: ExtensionAPI) {
             ) => {
                 const t = theme;
                 const text = resultText(result);
-                const pad = 3;
+                const pad = 2; // the │ sits in the ⏺'s column
                 const code = SHELL_TOOLS.has(toolName) ? exitCodeFor(result) : undefined;
                 const dotTag = code === undefined ? "" : ` ${t.fg("dim", "·")} ${exitStyleFor(code, t)}`;
-                const close = code === undefined ? "" : ` ${exitStyleFor(code, t)}`;
+                const close = code === undefined ? "" : exitStyleFor(code, t);
                 if (options.expanded) {
                     if (context.isError) {
                         const lines = (text.trim().length > 0 ? text.trim() : "failed").split("\n");
