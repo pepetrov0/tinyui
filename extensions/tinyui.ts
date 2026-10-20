@@ -27,8 +27,8 @@ import type {
 // ── Spinner ─────────────────────────────────────────────────────────────────
 const SPINNER_FRAMES = ["✻", "✶", "✽", "✳", "✢", "●"];
 const SPINNER_MS = 110;
-// Ticks between verb rotations (~10 s at SPINNER_MS) — a full breath, not a flutter.
-const GERUND_ROTATE_TICKS = 90;
+// Ticks between verb rotations (~60 s at SPINNER_MS) — a full breath, not a flutter.
+const GERUND_ROTATE_TICKS = Math.round(60_000 / SPINNER_MS);
 const GERUNDS = [
     "Mesmerizing", "Musing", "Pondering", "Simmering", "Brewing", "Conjuring", "Noodling",
     "Vibing", "Marinating", "Percolating", "Reticulating", "Crunching",
@@ -36,6 +36,19 @@ const GERUNDS = [
     "Contemplating", "Deliberating", "Cerebrating", "Finagling", "Ideating",
     "Forging", "Germinating", "Hatching", "Mustering", "Ruminating",
     "Transmuting", "Manifesting", "Cobbling", "Scheming",
+    "Tinkering", "Puttering", "Whittling", "Weaving", "Spinning", "Juggling",
+    "Kneading", "Decanting", "Incubating", "Pollinating", "Alchemizing",
+    "Untangling", "Sifting", "Sorting", "Digesting", "Chewing", "Gnawing",
+    "Scurrying", "Beavering", "Bumbling", "Daydreaming",
+    "Frolicking", "Galloping", "Wibbling", "Wobbling", "Flibbertigibbeting",
+    "Sizzling", "Sautéing", "Blanching", "Whisking", "Puréeing", "Emulsifying",
+    "Caramelizing", "Aging", "Proofing", "Scalding", "Zesting",
+    "Smelting", "Quenching", "Tempering", "Annealing", "Galvanizing", "Soldering",
+    "Welding", "Polishing", "Sanding", "Sharpening", "Calibrating",
+    "Sketching", "Doodling", "Scribbling", "Drafting", "Composing", "Orchestrating",
+    "Humming", "Whistling", "Crooning", "Yodeling", "Beatboxing",
+    "Gargling", "Blinking", "Wriggling", "Wiggling", "Fidgeting", "Squirming",
+    "Napping", "Procrastinating", "Overthinking",
 ];
 // One spinner row pinned above the editor while streaming: never moves, never grows.
 const STATUS_PANE_KEY = "tinyui-status";
@@ -216,7 +229,7 @@ export default function tinyUiExtension(pi: ExtensionAPI) {
         liveTimer = setInterval(() => {
             if (!livePane) return;
             livePane.tick += 1;
-            if (livePane.tick % GERUND_ROTATE_TICKS === 0) gerundIndex += 1; // rotate the gerund every ~10 s
+            if (livePane.tick % GERUND_ROTATE_TICKS === 0) gerundIndex += 1; // rotate the gerund every ~60 s
             livePane.requestRender();
         }, SPINNER_MS) as any;
         // The pane carries the spinner + gerund, so the built-in loader row stays down.

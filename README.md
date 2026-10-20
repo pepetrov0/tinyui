@@ -13,7 +13,7 @@
 ## Features
 
 - **Hidden thinking** — the reasoning stream is dropped entirely (streaming and settled; full text remains in the session file and exports). While the agent works, a single motionless row above the editor replaces pi's loader:
-  `✻ Musing… (esc to interrupt)` — with a rotating gerund (~10 s apart), *Simmering*, *Percolating*, *Reticulating*…
+  `✻ Musing… (esc to interrupt)` — with a rotating gerund (~60 s apart), *Simmering*, *Percolating*, *Reticulating*…
 - **Compact tool lines** — `⏺ Bash(npm test)` call lines with one-line `│` results (`· exit 0` for shell tools), `+N -M` diff stats for edits, and `(N lines)` markers instead of walls of output.
 - **Full fidelity on demand** — `ctrl+o` (or a click) expands any tool result in place: a `│` left gutter holds the complete output, closing on a bare vertical bar underneath — full edit diffs colored `+`/`-` included.
 - **One switch** — `/tinyui off` puts everything back exactly as pi shipped it, nothing left behind.
