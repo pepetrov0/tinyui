@@ -4,7 +4,7 @@
  *   Thinking     hidden entirely (streaming and settled). While the agent works,
  *                a single motionless row above the editor replaces pi's loader:
  *                `✻ Musing… (esc to interrupt)`.
- *   Tool usage   compact rendering: `⏺ Bash(cmd)` calls with `│` one-line results
+ *   Tool usage   compact rendering: `■ Bash(cmd)` calls with `│` one-line results
  *                (`· exit N` for shell tools) and `+N -M` diff stats; expanding a
  *                result (ctrl+o/click) drops its complete output under a `│` left
  *                gutter, still in the user's theme.
@@ -120,7 +120,7 @@ class ThinkingPane {
 // ── Tool rendering ──────────────────────────────────────────────────────────
 /**
  * Left gutter for expanded results: `│` bars down the side of every row, indented
- * to sit directly under the call's `⏺`, with the column closing on a bare vertical
+ * to sit directly under the call's `■`, with the column closing on a bare vertical
  * bar (no `╰─` corner — the gutter stays vertical all the way down). Shell tools
  * always get the closing row — its `close` argument carries the colored `exit N`
  * status, aligned with the output column — while other tools close only when the
@@ -264,7 +264,7 @@ export default function tinyUiExtension(pi: ExtensionAPI) {
         stopThinkingPane(ctx as ExtensionContext | undefined);
     });
 
-    // ── Tool renderer: ⏺ call / │ result ────────────────────────────────────
+    // ── Tool renderer: ■ call / │ result ────────────────────────────────────
     // Collapsed: terse one-liners in the user's theme (shell tools suffix `· exit N`).
     // Expanded (ctrl+o / click): same call line, complete results under a `│` left gutter. /tinyui off
     // passes everything straight through.
@@ -276,7 +276,7 @@ export default function tinyUiExtension(pi: ExtensionAPI) {
                 const t = theme;
                 const { verb, arg } = styleFor(toolName);
                 const snippet = snippetFor(args, arg, context.argsComplete);
-                const bullet = `${t.fg("accent", "⏺")} ${bold(t.fg("text", verb))}`;
+                const bullet = `${t.fg("accent", "■")} ${bold(t.fg("text", verb))}`;
                 return new Line(
                     () => (snippet ? `${bullet} ${t.fg("dim", snippet)}` : bullet),
                     2,
@@ -290,7 +290,7 @@ export default function tinyUiExtension(pi: ExtensionAPI) {
             ) => {
                 const t = theme;
                 const text = resultText(result);
-                const pad = 2; // the │ sits in the ⏺'s column
+                const pad = 2; // the │ sits in the ■'s column
                 const code = SHELL_TOOLS.has(toolName) ? exitCodeFor(result) : undefined;
                 const dotTag = code === undefined ? "" : ` ${t.fg("dim", "·")} ${exitStyleFor(code, t)}`;
                 const close = code === undefined ? "" : exitStyleFor(code, t);

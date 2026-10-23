@@ -103,10 +103,10 @@ const res = renderers.renderResult(
 const resRow = res.render(80)[0];
 console.log("result:", JSON.stringify(resRow));
 if (!resRow.includes("·") || !resRow.includes(userTheme.fg("dim", "exit 0"))) throw new Error("collapsed bash must show its exit code");
-// indent: the result's │ must sit directly under the call's ⏺ (same 2-space column)
+// indent: the result's │ must sit directly under the call's ■ (same 2-space column)
 const plain = (s) => s.replace(/\x1b\[[0-9;]*m/g, "");
-if (!plain(call.render(80)[0]).startsWith("  ⏺ ")) throw new Error("call bullet must be indented 2 spaces");
-if (!plain(resRow).startsWith("  │  ")) throw new Error("result │ must sit directly under the ⏺");
+if (!plain(call.render(80)[0]).startsWith("  ■ ")) throw new Error("call bullet must be indented 2 spaces");
+if (!plain(resRow).startsWith("  │  ")) throw new Error("result │ must sit directly under the ■");
 const editRenderers = resolver("edit", () => undefined);
 const editRes = editRenderers.renderResult(
     { content: [], details: { diff: "+added line\n-removed line\n context" } },
@@ -121,10 +121,10 @@ const noOutRes = renderers.renderResult(
     userTheme, { isError: false, args: {} },
 );
 console.log("no-output:", JSON.stringify(noOutRes.render(80)[0]));
-if (!call.render(80)[0].includes("⏺") || !call.render(80)[0].includes("npm test")) throw new Error("call should be ⏺ Bash …");
+if (!call.render(80)[0].includes("■") || !call.render(80)[0].includes("npm test")) throw new Error("call should be ■ Bash …");
 // accent must come from the USER's theme (pi dark: violet accent), not tinyui
-const accentExpected = userTheme.fg("accent", "⏺");
-if (!call.render(80)[0].includes(accentExpected)) throw new Error("⏺ must be colored with the user's theme accent");
+const accentExpected = userTheme.fg("accent", "■");
+if (!call.render(80)[0].includes(accentExpected)) throw new Error("■ must be colored with the user's theme accent");
 
 console.log("\n== expanded result → │ gutter, no ╰─ corner (user's theme) ==");
 const expanded = renderers.renderResult(
@@ -140,7 +140,7 @@ if (!expRows[0].includes("│") || !expRows[1].includes("│")) throw new Error(
 if (!expRows[2].includes(userTheme.fg("muted", "│  ")) || !expRows[2].includes(userTheme.fg("dim", "exit 0")))
     throw new Error("expanded block must close on a bare │ bar carrying the shell exit status");
 if (expRows.some((r) => r.includes("╰─"))) throw new Error("no ╰─ corner may remain in the expanded gutter");
-if (!plain(expRows[0]).startsWith("  │  ")) throw new Error("expanded gutter bars must sit under the ⏺");
+if (!plain(expRows[0]).startsWith("  │  ")) throw new Error("expanded gutter bars must sit under the ■");
 if (!expRows[1].includes(userTheme.fg("toolOutput", "two"))) throw new Error("expanded lines must carry the user's theme toolOutput");
 
 // bash failure: exit code in error color, collapsed and expanded
